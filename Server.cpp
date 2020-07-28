@@ -17,6 +17,7 @@
 using namespace std;
 // DEBUG
 
+#include "GameEnv.cpp"
 #include "gameMessage.cpp"
 
 #define PORT 22618
@@ -28,7 +29,8 @@ using namespace std;
 int players_number{0};
 int connfd[MAXGAMES][MAXPLAYERS];
 
-void init_game(int p1, int p2) {
+void init_game(int p1, int p2)
+{
     unsigned char buf[MAXLINE];
     struct GAME_MESSAGE *message = (struct GAME_MESSAGE *)&buf;
     message->rotation = 0;
@@ -37,31 +39,33 @@ void init_game(int p1, int p2) {
     message->loc_y = 0;
     message->update_board = 0;
     message->game_over = 0;
-    message->reset = 1 ;
+    message->reset = 1;
     send(p1, buf, 4, MSG_DONTWAIT);
     send(p2, buf, 4, MSG_DONTWAIT);
     return;
 }
 
-void game_start(int player, int opponent )
+void game_start(int player, int opponent)
 {
     unsigned char buf[MAXLINE];
     bool isGameOver{false};
     struct GAME_MESSAGE *header;
+    unsigned char *board;
 
     cout << "Initate player " << player << " against player " << opponent << endl;
     int n;
 
     while (!isGameOver)
     {
-        if ( ( n = read(player, buf, sizeof(buf)) ) <= 0  ) {
-            cout << "Disconnected" << endl ;
+        if ((n = read(player, buf, sizeof(buf))) <= 0)
+        {
+            cout << "Disconnected" << endl;
             break;
         }
 
         header = (struct GAME_MESSAGE *)&buf;
-        cout << "recieved from " << player << endl ;
-        cout << "rotation " << (int)header->rotation  << endl;
+        cout << "recieved from " << player << endl;
+        cout << "rotation " << (int)header->rotation << endl;
         cout << "pid " << (int)header->p_id << endl;
         cout << "locx " << (int)header->loc_x << endl;
         cout << "loxy " << (int)header->loc_y << endl;
@@ -70,11 +74,12 @@ void game_start(int player, int opponent )
 
         int shift = 0;
         int v = 0;
-        unsigned char* board = &buf[sizeof(struct GAME_MESSAGE)] ;
+        board = &buf[sizeof(struct GAME_MESSAGE)];
         if (header->update_board)
         {
-            for (int i=0;i<10;i++) {
-                for (int j = 0; j < 20; j++)
+            for (int i = 0; i < BOARD_WIDTH; i++)
+            {
+                for (int j = 0; j < BOARD_HEIGHT; j++)
                 {
                     cout << (int)((*board >> shift) & 1);
                     shift++;
@@ -86,9 +91,10 @@ void game_start(int player, int opponent )
                 }
                 cout << endl;
             }
-                
         }
-        send(opponent, buf, 29, MSG_DONTWAIT);
+        // n = send(player, buf, 29, MSG_DONTWAIT);
+        n = send(opponent, buf, 29, MSG_DONTWAIT);
+        // cout << "player " << player << " send " << n << endl;
     }
     return;
 }
@@ -136,9 +142,9 @@ int main()
         while (players_number < MAXPLAYERS)
         {
             cout << "waiting..." << endl;
-            
+
             int player_id = players_number;
-            
+
             if ((connfd[games_count][player_id] = accept(sd, NULL, NULL)) < 0)
             {
                 perror("accept()");
@@ -150,7 +156,7 @@ int main()
         }
         cout << "TETRIS ARENA START!" << endl;
         init_game(connfd[games_count][0], connfd[games_count][1]);
-        
+
         std::thread t1(game_start, connfd[games_count][1], connfd[games_count][0]);
         t1.detach();
         std::thread t2(game_start, connfd[games_count][0], connfd[games_count][1]);

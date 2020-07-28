@@ -70,15 +70,16 @@ void Pieces::LoadPieceInfo()
     int x, y;
     for (int i = 0; i < PIECES_ROTATION; i++)
     {
-        char fileName = (char) '0'+i;
+        char fileName = (char)'0' + i;
         ifstream pieceFile(pieceFolder + fileName);
         if (pieceFile.is_open())
         {
             int j{0};
             while (j < PIECE_BLOCKS && getline(pieceFile, line))
             {
-                for (int k = 0; k < PIECE_BLOCKS; k++){
-                    myBlock[i][j][k] = (int)line[k]-'0';
+                for (int k = 0; k < PIECE_BLOCKS; k++)
+                {
+                    myBlock[i][j][k] = (int)line[k] - '0';
                 }
 
                 j++;

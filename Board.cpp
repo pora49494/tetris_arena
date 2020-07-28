@@ -71,14 +71,16 @@ void Board::DeleteLines(vector<int> &pYList)
         {
             yi++;
         }
-        else {
+        else
+        {
             if (j != k)
                 for (int i = 0; i < BOARD_WIDTH; i++)
                     mBoard[i][k] = mBoard[i][j];
             k--;
         }
     }
-    while (k >= 0) {
+    while (k >= 0)
+    {
         for (int i = 0; i < BOARD_WIDTH; i++)
             mBoard[i][k] = POS_FREE;
         k--;
@@ -88,7 +90,8 @@ void Board::DeleteLines(vector<int> &pYList)
 void Board::UpdateFromMessage(unsigned char *board)
 {
     int shift = 0;
-    for (int i = 0; i < BOARD_WIDTH; i++){
+    for (int i = 0; i < BOARD_WIDTH; i++)
+    {
         for (int j = 0; j < BOARD_HEIGHT; j++)
         {
             mBoard[i][j] = (int)((*board >> shift) & 1);
@@ -99,7 +102,6 @@ void Board::UpdateFromMessage(unsigned char *board)
             }
         }
     }
-        
 }
 
 void Board::DeletePossibleLines()
