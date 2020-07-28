@@ -19,6 +19,8 @@ public:
     void StorePiece(int pX, int pY, int pPiece, int pRotation);
     void DeletePossibleLines();
 
+    void UpdateFromMessage(unsigned char *buf);
+
     bool IsGameOver();
 
 private:
@@ -41,10 +43,6 @@ void Board::InitBoard()
     for (int i = 0; i < BOARD_WIDTH; i++)
         for (int j = 0; j < BOARD_HEIGHT; j++)
             mBoard[i][j] = POS_FREE;
-
-    for (int i = 0; i < BOARD_WIDTH ; i++)
-        for (int j=0;j<BOARD_HEIGHT; j++)
-            mBoard[i][j] = POS_FILLED;
 }
 
 void Board::StorePiece(int pID, int pX, int pY, int pRotation)
@@ -85,6 +83,23 @@ void Board::DeleteLines(vector<int> &pYList)
             mBoard[i][k] = POS_FREE;
         k--;
     }
+}
+
+void Board::UpdateFromMessage(unsigned char *board)
+{
+    int shift = 0;
+    for (int i = 0; i < BOARD_WIDTH; i++){
+        for (int j = 0; j < BOARD_HEIGHT; j++)
+        {
+            mBoard[i][j] = (int)((*board >> shift) & 1);
+            if (++shift == 8)
+            {
+                shift = 0;
+                board++;
+            }
+        }
+    }
+        
 }
 
 void Board::DeletePossibleLines()
