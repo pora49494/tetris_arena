@@ -37,6 +37,7 @@ public:
 private:
     int pNextPosX, pNextPosY;
     int pNextID, pNextRotation;
+    bool inOnlineBattle{false};
     
     unsigned char buf[MAX_MESSAGE_SIZE];
     unsigned char rbuf[MAX_MESSAGE_SIZE];
@@ -82,6 +83,9 @@ void Game::InitGame()
     pNextRotation = rand() % PIECES_ROTATION;
     pNextPosX = BOARD_WIDTH + 1;
     pNextPosY = 0;
+
+    mBoard.InitBoard();
+    oBoard.InitBoard();
 }
 
 void Game::CreateNewPiece()
@@ -180,8 +184,8 @@ void Game::DrawScene()
 void Game::DrawOpponentScene()
 {
     DrawBoard(false);
-    // cout << oPosX << " " << oPosY << " " << oID << " " << oRotation << endl;
-    // DrawPiece(oPosX, oPosY, oID, oRotation, BOARD_OPPONENT_POSITION);
+    if (oID != -1)
+        DrawPiece(oPosX, oPosY, oID, oRotation, BOARD_OPPONENT_POSITION);
 }
 
 int Game::BuildMessage(bool updateBoard, bool gameOver)
@@ -193,6 +197,7 @@ int Game::BuildMessage(bool updateBoard, bool gameOver)
     message->loc_y = pPosY;
     message->update_board = updateBoard;
     message->game_over = gameOver;
+    message->reset =0 ;
 
     if (updateBoard)
     {
@@ -245,6 +250,12 @@ void Game::OpponentAction(Client &c)
         bool updateBoard = (int)header->update_board;
         gameOver = (bool)header->game_over;
 
+        if ((bool)header->reset) {
+            inOnlineBattle = true ;
+            InitGame();
+            return;
+        }
+
         // cout << "oRotation " << oRotation << endl;
         // cout << "oID " << oID << endl;
         // cout << "oPosX " << oPosX << endl;
@@ -256,9 +267,6 @@ void Game::OpponentAction(Client &c)
         {
             oBoard.UpdateFromMessage( &rbuf[sizeof(struct GAME_MESSAGE)] );
         }
-        // mWindow.clear();
-        // DrawScene();
-        // DrawOpponentScene();
     }
 }
 
@@ -274,11 +282,21 @@ void Game::Play()
     t.detach();
 
     Action(c);
-    sf::Clock clock;
+    sf::Clock clock, clock_render;
     sf::Time elapsed;
+    sf::Time elapsed_render;
+
     while (mWindow.isOpen())
     {
-        sf::Time elapsed = clock.getElapsedTime();
+        elapsed = clock.getElapsedTime();
+        elapsed_render = clock_render.getElapsedTime();
+        if (elapsed_render.asMilliseconds() > 300)
+        {
+            mWindow.clear();
+            DrawScene();
+            DrawOpponentScene();
+            clock_render.restart();
+        }
         if (elapsed.asSeconds() > 1)
         {
             if (mBoard.IsPossibleMovement(pPosX, pPosY + 1, pID, pRotation))
@@ -346,7 +364,7 @@ void Game::Play()
                 break;
             }
         }
-        if (gameOver)
+        if (gameOver && inOnlineBattle)
         {
             break;
         }
