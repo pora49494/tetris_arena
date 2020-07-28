@@ -9,6 +9,6 @@ struct GAME_MESSAGE
     // game state (1+1+1=3)
     unsigned char update_board  : 1;
     unsigned char game_over     : 1;
-    unsigned char empty         : 1;
+    unsigned char reset         : 1;
 };
 
