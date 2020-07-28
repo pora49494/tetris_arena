@@ -237,37 +237,44 @@ void Game::OpponentAction(Client &c)
     int n;
     while (!gameOver)
     {
-        if ((n = c.Listen(rbuf)) <= 0)
+        try
         {
-            std::cout << "disconnected" << std::endl;
-            break;
+            if ((n = c.Listen(rbuf)) <= 0)
+            {
+                std::cout << "disconnected" << std::endl;
+                break;
+            }
+            struct GAME_MESSAGE *header = (struct GAME_MESSAGE *)&rbuf;
+
+            oRotation = (int)header->rotation;
+            oID = (int)header->p_id;
+            oPosX = (int)header->loc_x;
+            oPosY = (int)header->loc_y;
+            bool updateBoard = (int)header->update_board;
+            gameOver = (bool)header->game_over;
+
+            if ((bool)header->reset)
+            {
+                cout << "reset" << endl;
+                inOnlineBattle = true;
+                InitGame();
+            }
+
+            // cout << "oRotation " << oRotation << endl;
+            // cout << "oID " << oID << endl;
+            // cout << "oPosX " << oPosX << endl;
+            // cout << "oPosY " << oPosY << endl;
+            // cout << "updateBoard " << updateBoard << endl;
+            // cout << "gameOver " << gameOver << endl;
+
+            if (updateBoard)
+            {
+                oBoard.UpdateFromMessage(&rbuf[sizeof(struct GAME_MESSAGE)]);
+            }
         }
-        struct GAME_MESSAGE *header = (struct GAME_MESSAGE *)&rbuf;
-
-        oRotation = (int)header->rotation;
-        oID = (int)header->p_id;
-        oPosX = (int)header->loc_x;
-        oPosY = (int)header->loc_y;
-        bool updateBoard = (int)header->update_board;
-        gameOver = (bool)header->game_over;
-
-        if ((bool)header->reset)
+        catch (exception &e)
         {
-            cout << "reset" << endl;
-            inOnlineBattle = true;
-            InitGame();
-        }
-
-        cout << "oRotation " << oRotation << endl;
-        cout << "oID " << oID << endl;
-        cout << "oPosX " << oPosX << endl;
-        cout << "oPosY " << oPosY << endl;
-        cout << "updateBoard " << updateBoard << endl;
-        cout << "gameOver " << gameOver << endl;
-
-        if (updateBoard)
-        {
-            oBoard.UpdateFromMessage(&rbuf[sizeof(struct GAME_MESSAGE)]);
+            cout << e.what() << '\n';
         }
     }
 }
@@ -287,19 +294,21 @@ void Game::Play()
     sf::Clock clock, clock_render;
     sf::Time elapsed;
     sf::Time elapsed_render;
+    bool pause;
 
     while (mWindow.isOpen())
     {
         elapsed = clock.getElapsedTime();
         elapsed_render = clock_render.getElapsedTime();
-        if (!gameOver && elapsed_render.asMilliseconds() > 300)
+        pause = gameOver & inOnlineBattle;
+        if (!pause && elapsed_render.asMilliseconds() > 300)
         {
             mWindow.clear();
             DrawScene();
             DrawOpponentScene();
             clock_render.restart();
         }
-        if (!gameOver && elapsed.asSeconds() > 1)
+        if (!pause && elapsed.asSeconds() > 1)
         {
             if (mBoard.IsPossibleMovement(pPosX, pPosY + 1, pID, pRotation))
                 pPosY++;
@@ -316,7 +325,7 @@ void Game::Play()
             switch (event.type)
             {
             case sf::Event::KeyPressed:
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+                if (!pause && sf::Keyboard::isKeyPressed(sf::Keyboard::A))
                 {
                     if (mBoard.IsPossibleMovement(pPosX - 1, pPosY, pID, pRotation))
                     {
@@ -324,7 +333,7 @@ void Game::Play()
                         Action(c);
                     }
                 }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+                else if (!pause && sf::Keyboard::isKeyPressed(sf::Keyboard::S))
                 {
                     if (mBoard.IsPossibleMovement(pPosX, pPosY + 1, pID, pRotation))
                     {
@@ -332,7 +341,7 @@ void Game::Play()
                         Action(c);
                     }
                 }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+                else if (!pause && sf::Keyboard::isKeyPressed(sf::Keyboard::W))
                 {
                     while (mBoard.IsPossibleMovement(pPosX, pPosY + 1, pID, pRotation))
                         pPosY++;
@@ -340,7 +349,7 @@ void Game::Play()
                     clock.restart();
                     Action(c);
                 }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+                else if (!pause && sf::Keyboard::isKeyPressed(sf::Keyboard::D))
                 {
                     if (mBoard.IsPossibleMovement(pPosX + 1, pPosY, pID, pRotation))
                     {
@@ -348,10 +357,14 @@ void Game::Play()
                         Action(c);
                     }
                 }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
+                else if (!pause && sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
                 {
                     pRotation = (pRotation + 1) % PIECES_ROTATION;
                     Action(c);
+                }
+                else if (pause && sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+                {
+                    return;
                 }
                 break;
             case sf::Event::Closed:
@@ -361,11 +374,7 @@ void Game::Play()
                 break;
             }
         }
-        if (gameOver && inOnlineBattle)
-        {
-            break;
-        }
-        else if (gameOver && !inOnlineBattle)
+        if (gameOver && !inOnlineBattle)
         {
             InitGame();
         }
