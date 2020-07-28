@@ -20,8 +20,8 @@ class Client
 private:
     int sockfd{0};
     struct sockaddr_in sa;
-    unsigned char serverIP[20] = "127.0.0.1";
-    // unsigned char serverIP[20] = "54.249.50.155";
+    // unsigned char serverIP[20] = "127.0.0.1";
+    unsigned char serverIP[20] = "54.249.50.155";
 
 public:
     Client(){};
