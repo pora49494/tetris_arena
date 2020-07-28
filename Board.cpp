@@ -21,6 +21,7 @@ public:
 
     void UpdateFromMessage(unsigned char *buf);
 
+    void InitBoard();
     bool IsGameOver();
 
 private:
@@ -34,7 +35,6 @@ private:
     int mBoard[BOARD_WIDTH][BOARD_HEIGHT];
     vector<Pieces> mPieces;
 
-    void InitBoard();
     void DeleteLines(vector<int> &pYList);
 };
 
